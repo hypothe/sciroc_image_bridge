@@ -15,16 +15,21 @@ class image_converter:
 		self.image_pub = rospy.Publisher("/camera/rgb/image_raw",Image, queue_size=10)
 
 		self.bridge = CvBridge()
-		self.image_sub = rospy.Subscriber("detection_image",Image, self.callback)
+		self.image_sub = rospy.Subscriber("/darknet_ros/detection_image",Image, self.callback)
+		self.onehot = False
 
 	def callback(self,data):
+		if not self.onehot:
+			return
+
 		try:
-			cv_image = self.bridge.imgmsg_to_cv2(data)
+			cv_image = self.bridge.imgmsg_to_cv2(data, "bgr8")
 		except CvBridgeError as e:
 			print(e)
 
 		cv2.imshow("Image after YOLO", cv_image)
-		cv2.waitKey(3)
+		cv2.waitKey(6000)
+		self.onehot = False
 		
 	def get_image_from_file(self, path_to_img):
 		assert os.path.isfile(path_to_img), "ERROR: file %s not found" % path_to_img
@@ -35,10 +40,11 @@ class image_converter:
 
 		(rows,cols,channels) = img.shape
 		cv2.imshow("Input image %sx%sx%s" % (rows,cols,channels), img)
-		cv2.waitKey(0)
+		cv2.waitKey(3000)
 
 		try:
-			self.image_pub.publish(self.bridge.cv2_to_imgmsg(img))
+			self.image_pub.publish(self.bridge.cv2_to_imgmsg(img, "rgb8"))
+			self.onehot = True
 		except CvBridgeError as e:
 			print(e)
 #
