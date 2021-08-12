@@ -48,16 +48,24 @@ class image_converter:
 		try:
 			goal = darknet_ros_msgs.msg.CheckForObjectsActionGoal().goal
 			goal.id = self.count
-			goal.image = self.bridge.cv2_to_imgmsg(img, "rgb8")
+			goal.image = self.bridge.cv2_to_imgmsg(img, "bgr8")
 
 			self.ac_.send_goal(goal)
 			self.count += 1
-			self.ac_.wait_for_result(timeout=rospy.Duration(secs=5))
+			ret = self.ac_.wait_for_result(timeout=rospy.Duration(secs=20))
+			print("STATE: %s" % self.ac_.get_state())
+			print("GOAL STATUS %s" % self.ac_.get_goal_status_text())
+
+			if not ret:
+				print("NO RESPONSE")
+				return
 
 			result = self.ac_.get_result()
 
+			print("Result obtained: %s" % result)
+
 			for box in result.bounding_boxes.bounding_boxes:
-				print("Class: %s\n\tprob: %ld\n\tmin: [%ld, %ld]\n\tmax: [%ld, %ld]" \
+				print("Class: %s\n\tprob: %lf\n\tmin: [%ld, %ld]\n\tmax: [%ld, %ld]" \
 					% (box.Class, box.probability, box.xmin, box.ymin, box.xmax, box.ymax))
 
 		except CvBridgeError as e:
