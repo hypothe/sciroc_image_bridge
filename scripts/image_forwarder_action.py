@@ -14,14 +14,11 @@ import darknet_ros_msgs.msg
 class image_converter:
 
 	def __init__(self):
-		self.image_pub = rospy.Publisher("/camera/rgb/image_raw",Image, queue_size=10)
 
 		self.bridge = CvBridge()
-		self.image_sub = rospy.Subscriber("/darknet_ros/detection_image",Image, self.callback)
-		self.onehot = False
 		self.count = 0
 
-		self.ac_ = actionlib.SimpleActionClient('image_bridge', darknet_ros_msgs.msg.CheckForObjectsAction)
+		self.ac_ = actionlib.SimpleActionClient('darknet_ros/check_for_objects', darknet_ros_msgs.msg.CheckForObjectsAction)
 		self.ac_.wait_for_server()
 
 	#def callback(self,data):
@@ -49,13 +46,17 @@ class image_converter:
 		#cv2.waitKey(3000)
 
 		try:
-			goal = darknet_ros_msgs.msg.CheckForObjectsActionGoal(id = self.count, \
-																														image = self.bridge.cv2_to_imgmsg(img, "rgb8"))
+			goal = darknet_ros_msgs.msg.CheckForObjectsActionGoal().goal
+			goal.id = self.count
+			goal.image = self.bridge.cv2_to_imgmsg(img, "rgb8")
+
 			self.ac_.send_goal(goal)
-			
+			self.count += 1
 			self.ac_.wait_for_result(timeout=rospy.Duration(secs=5))
 
-			for box in self.ac_.get_result().bounding_boxes:
+			result = self.ac_.get_result()
+
+			for box in result.bounding_boxes.bounding_boxes:
 				print("Class: %s\n\tprob: %ld\n\tmin: [%ld, %ld]\n\tmax: [%ld, %ld]" \
 					% (box.Class, box.probability, box.xmin, box.ymin, box.xmax, box.ymax))
 
@@ -66,8 +67,8 @@ class image_converter:
 ################################ Class : end
 
 def main(args):
-	ic = image_converter()
 	rospy.init_node('image_converter', anonymous=True)
+	ic = image_converter()
 	rate = rospy.Rate(1)
 
 	while not rospy.is_shutdown():
