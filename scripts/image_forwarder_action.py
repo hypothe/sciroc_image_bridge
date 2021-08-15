@@ -18,7 +18,7 @@ class image_converter:
 		self.bridge = CvBridge()
 		self.count = 0
 
-		self.ac_ = actionlib.SimpleActionClient('darknet_ros/check_for_objects', darknet_ros_msgs.msg.CheckForObjectsAction)
+		self.ac_ = actionlib.SimpleActionClient('darknet_ros_as/check_for_objects', darknet_ros_msgs.msg.CheckForObjectsAction)
 		self.ac_.wait_for_server()
 
 	#def callback(self,data):
