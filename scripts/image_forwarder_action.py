@@ -11,6 +11,8 @@ from cv_bridge import CvBridge, CvBridgeError
 import os
 import darknet_ros_msgs.msg
 
+from timeit import default_timer as timer
+
 class image_converter:
 
 	def __init__(self):
@@ -35,7 +37,9 @@ class image_converter:
 	#	self.onehot = False
 		
 	def image_forward(self, path_to_img):
-		assert os.path.isfile(path_to_img), "ERROR: file %s not found" % path_to_img
+		if not os.path.isfile(path_to_img):
+			print("ERROR: file %s not found" % path_to_img)
+			return
 
 		img = cv2.imread(path_to_img)
 		if img is None:
@@ -49,21 +53,20 @@ class image_converter:
 			goal = darknet_ros_msgs.msg.CheckForObjectsActionGoal().goal
 			goal.id = self.count
 			goal.image = self.bridge.cv2_to_imgmsg(img, "bgr8")
-
+			
+			start = timer()
 			self.ac_.send_goal(goal)
 			self.count += 1
 			ret = self.ac_.wait_for_result(timeout=rospy.Duration(secs=20))
-			print("STATE: %s" % self.ac_.get_state())
-			print("GOAL STATUS %s" % self.ac_.get_goal_status_text())
+			end = timer()
 
+			elapsed = end - start
 			if not ret:
 				print("NO RESPONSE")
 				return
 
 			result = self.ac_.get_result()
-
-			print("Result obtained: %s" % result)
-
+			print("Elapsed time %f" % elapsed)
 			for box in result.bounding_boxes.bounding_boxes:
 				print("Class: %s\n\tprob: %lf\n\tmin: [%ld, %ld]\n\tmax: [%ld, %ld]" \
 					% (box.Class, box.probability, box.xmin, box.ymin, box.xmax, box.ymax))
