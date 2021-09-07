@@ -32,7 +32,7 @@ class image_converter:
 		# cv2.waitKey(3000)
 
 		try:
-			self.imgmsg = self.bridge.cv2_to_imgmsg(img, "rgb8")
+			self.imgmsg = self.bridge.cv2_to_imgmsg(img, "bgr8")
 		except CvBridgeError as e:
 			print(e)
 
